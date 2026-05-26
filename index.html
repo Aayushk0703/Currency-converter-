@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Coinstax Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+    }
+    h1, h3 { margin: 0 0 10px; }
+    h1 { font-size: 1.8rem; font-weight: 600; }
+    h3 { font-size: 1.2rem; font-weight: 600; }
+
+    .app { display: flex; height: 100vh; }
+    .sidebar {
+      width: 220px; background: #1f2937; color: #fff;
+      display: flex; flex-direction: column; padding: 20px;
+    }
+    .logo { font-size: 1.4rem; font-weight: 600; margin-bottom: 30px; }
+    .menu { display: flex; flex-direction: column; gap: 15px; }
+    .menu-item {
+      padding: 10px; border-radius: 6px; cursor: pointer;
+      transition: background 0.3s;
+    }
+    .menu-item:hover { background: #374151; }
+    .menu-item.active { background: #2563eb; }
+
+    .main { flex: 1; padding: 30px; overflow-y: auto; }
+
+    .stat-card, .card, .chart-card, .history-card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .calc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+    input, select {
+      width: 100%; padding: 8px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.95rem;
+    }
+
+    button {
+      background: #2563eb; color: #fff; border: none;
+      padding: 10px 16px; border-radius: 6px; cursor: pointer;
+      transition: background 0.3s; font-size: 0.95rem;
+    }
+    button:hover { background: #1e40af; }
+    .swap-btn { background: #6b7280; }
+    .swap-btn:hover { background: #4b5563; }
+    .clear-btn { background: #ef4444; }
+    .clear-btn:hover { background: #b91c1c; }
+
+    .result-box { margin-top: 15px; font-size: 1rem; font-weight: 500; }
+    .loading { margin-top: 10px; color: #2563eb; font-weight: 600; }
+    .hidden { display: none; }
+
+    .fee-group { margin-bottom: 15px; }
+    .fee-group label {
+      display: block; font-weight: 600; margin-bottom: 5px; color: #333;
+    }
+
+    #historyList { list-style: none; padding: 0; margin: 0; }
+    #historyList li { padding: 8px; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">💰 Coinstax Pro</div>
+    <nav class="menu">
+      <div class="menu-item active" onclick="showSection('dashboard')" id="menu-dashboard">📊 Dashboard</div>
+      <div class="menu-item" onclick="showSection('calculator')" id="menu-calculator">🧮 Calculator</div>
+      <div class="menu-item" onclick="showSection('transactions')" id="menu-transactions">📜 Transactions</div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="section hidden">
+      <h1>Dashboard Overview</h1>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Conversions</h3>
+          <p id="totalConversions">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Last Conversion</h3>
+          <p id="lastConversion">None</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALCULATOR -->
+    <div id="calculator" class="section">
+      <h1>Currency Calculator</h1>
+      <div class="calc-layout">
+        <!-- FORM -->
+        <div class="card">
+          <label>Amount</label>
+          <input type="number" id="amount" value="100">
+
+          <div class="row">
+            <select id="from">
+              <option value="USD">United States Dollar (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+              <option value="INR">Indian Rupee (INR)</option>
+              <option value="GBP">British Pound (GBP)</option>
+              <option value="JPY">Japanese Yen (JPY)</option>
+              <option value="AUD">Australian Dollar (AUD)</option>
+              <option value="CAD">Canadian Dollar (CAD)</option>
+              <option value="CHF">Swiss Franc (CHF)</option>
+              <option value="CNY">Chinese Yuan (CNY)</option>
+              <option value="NZD">New Zealand Dollar (NZD)</option>
+            </select>
+            <button class="swap-btn" onclick="swapCurrencies()">⇄</button>
+            <select id="to">
+              <option value="USD">United States Dollar (USD)</option>
+              <option value="EUR">Euro (EUR)</option>
+              <option value="INR">Indian Rupee (INR)</option>
+              <option value="GBP">British Pound (GBP)</option>
+              <option value="JPY">Japanese Yen (JPY)</option>
+              <option value="AUD">Australian Dollar (AUD)</option>
+              <option value="CAD">Canadian Dollar (CAD)</option>
+              <option value="CHF">Swiss Franc (CHF)</option>
+              <option value="CNY">Chinese Yuan (CNY)</option>
+              <option value="NZD">New Zealand Dollar (NZD)</option>
+            </select>
+          </div>
+
+          <h3>Taxes and Fees %</h3>
+          <div class="fee-group">
+            <label for="exchange_margin">Exchange Margin %</label>
+            <input type="number" id="exchange_margin" value="3">
+          </div>
+          <div class="fee-group">
+            <label for="transaction_fee">Transaction Fee %</label>
+            <input type="number" id="transaction_fee" value="1">
+          </div>
+          <div class="fee-group">
+            <label for="fixed_fee">Fixed Fee</label>
+            <input type="number" id="fixed_fee" value="5">
+          </div>
+
+          <button onclick="convert()">Convert</button>
+          <div id="loading" class="loading hidden">Converting...</div>
+          <div id="result" class="result-box"></div>
+        </div>
+
+        <!-- CHART -->
+        <div class="chart-card">
+          <h3>Fee Breakdown</h3>
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div id="transactions" class="section hidden">
+      <h1>Transaction History</h1>
+      <button class="clear-btn" onclick="clearHistory()">Clear History</button>
+      <div class="history-card">
+        <ul id="historyList"></ul>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let totalConversions = 0;
+let historyData = JSON.parse(localStorage.getItem("history")) || [];
+
+function showSection(sectionId) {
+  document.querySelectorAll(".section").forEach(sec => sec.classList.add("hidden"));
+  document.getElementById(sectionId).classList.remove("hidden");
+
+  document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("active"));
+  document.getElementById("menu-" + sectionId).classList.add("active");
+}
+
+function swapCurrencies() {
+  const from = document.getElementById("from");
+  const to = document.getElementById("to");
+  const temp = from.value;
+  from.value = to.value;
+  to.value = temp;
+}
+
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+  historyData.forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.appendChild(li);
+  });
+}
+
+function clearHistory() {
+  historyData = [];
+  localStorage.removeItem("history");
+  renderHistory();
+}
+
+async function convert() {
+  document.getElementById("loading").classList.remove("hidden");
+
+  const amountValue = document.getElementById("amount").value;
+  const fromValue = document.getElementById("from").value;
+  const toValue = document.getElementById("to").value;
+
+  const response = await fetch(`/convert?amount=${amountValue}&from_currency=${fromValue}&to_currency=${toValue}`);
+  const data = await response.json();
+
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("result").innerHTML =
+    `${amountValue} ${fromValue} = <strong>${data.final_amount}</strong> ${toValue}`;
+
+  totalConversions++;
+  document.getElementById("totalConversions").innerText = totalConversions;
+  document.getElementById("lastConversion").innerText =
+    `${amountValue} ${fromValue} → ${data.final_amount} ${toValue}`;
+
+  historyData.unshift(`${amountValue} ${fromValue} → ${data.final_amount} ${toValue}`);
+  localStorage.setItem("history", JSON.stringify(historyData));
+  renderHistory();
+
+  generateTrendChart(fromValue, toValue, data);
+}
+
+/* Chart.js Fee Breakdown */
+function generateTrendChart(fromValue, toValue, data) {
+  const ctx = document.getElementById("chart").getContext("2d");
+
+  if (window.feeChart) {
+    window.feeChart.destroy();
+  }
+
+  window.feeChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Exchange Margin", "Transaction Fee", "Fixed Fee", "Final Amount"],
+      datasets: [{
+        data: [
+          data.exchange_margin_amount,
+          data.transaction_fee_amount,
+          data.fixed_fee_amount,
+          data.final_amount
+        ],
+        backgroundColor: ["#2563eb", "#10b981", "#f59e0b", "#6b7280"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+}async function convert() {
+  document.getElementById("loading").classList.remove("hidden");
+
+  const amountValue = parseFloat(document.getElementById("amount").value);
+  const fromValue = document.getElementById("from").value;
+  const toValue = document.getElementById("to").value;
+
+  // Get fee inputs
+  const marginPercent = parseFloat(document.getElementById("exchange_margin").value) || 0;
+  const transactionPercent = parseFloat(document.getElementById("transaction_fee").value) || 0;
+  const fixedFee = parseFloat(document.getElementById("fixed_fee").value) || 0;
+
+  // Fetch base conversion rate
+  const response = await fetch(`/convert?amount=${amountValue}&from_currency=${fromValue}&to_currency=${toValue}`);
+  const data = await response.json();
+
+  // Base converted amount (gross, before fees)
+  const grossAmount = parseFloat(data.rate) * amountValue;
+
+  // Apply fees
+  const marginAmount = (marginPercent / 100) * grossAmount;
+  const transactionAmount = (transactionPercent / 100) * grossAmount;
+  const finalAmount = grossAmount - marginAmount - transactionAmount - fixedFee;
+
+  document.getElementById("loading").classList.add("hidden");
+
+  // Show breakdown: first gross, then deductions, then net
+  document.getElementById("result").innerHTML = `
+    <strong>Gross Conversion:</strong> ${amountValue} ${fromValue} = ${grossAmount.toFixed(2)} ${toValue}<br><br>
+    <strong>Net After Deductions:</strong> ${finalAmount.toFixed(2)} ${toValue}<br>
+    <small>
+      Exchange Margin: -${marginAmount.toFixed(2)}<br>
+      Transaction Fee: -${transactionAmount.toFixed(2)}<br>
+      Fixed Fee: -${fixedFee.toFixed(2)}
+    </small>
+  `;
+
+  totalConversions++;
+  document.getElementById("totalConversions").innerText = totalConversions;
+  document.getElementById("lastConversion").innerText =
+    `${amountValue} ${fromValue} → ${finalAmount.toFixed(2)} ${toValue}`;
+
+  historyData.unshift(`${amountValue} ${fromValue} → ${finalAmount.toFixed(2)} ${toValue}`);
+  localStorage.setItem("history", JSON.stringify(historyData));
+  renderHistory();
+
+  // Update chart with fee breakdown
+  generateTrendChart({
+    exchange_margin_amount: marginAmount,
+    transaction_fee_amount: transactionAmount,
+    fixed_fee_amount: fixedFee,
+    gross_amount: grossAmount,
+    final_amount: finalAmount
+  });
+  function generateTrendChart(data) {
+  const ctx = document.getElementById("chart").getContext("2d");
+
+  if (window.feeChart) {
+    window.feeChart.destroy();
+  }
+
+  window.feeChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Exchange Margin", "Transaction Fee", "Fixed Fee", "Net Final Amount"],
+      datasets: [{
+        data: [
+          data.exchange_margin_amount,
+          data.transaction_fee_amount,
+          data.fixed_fee_amount,
+          data.final_amount
+        ],
+        backgroundColor: ["#f59e0b", "#ef4444", "#6b7280", "#10b981"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+}
+
+}
+
+</script>
+
+</body>
+</html>
